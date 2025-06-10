@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Generate Product QR</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+   <div style="text-align: right;">
+    <a href="dash.html" class="box">Back</a>
+  </div>
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    h2 {
+      color: #f0c040;
+      margin-bottom: 20px;
+    }
+.box {
+  background-color: #ff9800;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+    input {
+      padding: 12px;
+      font-size: 16px;
+      margin: 10px;
+      width: 80%;
+      max-width: 300px;
+      border: none;
+      border-radius: 8px;
+      background: #1f1f1f;
+      color: white;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #f0c040;
+      color: black;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #e6b800;
+    }
+
+    .qr-wrapper {
+     display: inline-block;
+  width: 200px;
+  height: 200px;
+  padding: 20px;
+   background: #1f1f1f; /* QR code background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  margin: 20px auto 0;
+}
+
+    #printBtn {
+      display: none;
+      margin-top: 15px;
+      background-color: #4caf50;
+      color: white;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+
+      #printArea {
+        position: absolute;
+        top: 30px;
+        left: 0;
+        right: 0;
+        margin: auto;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Generate Product QR Code</h2>
+  <br />
+  <input type="text" id="productId" placeholder="Enter Product ID" />
+  <input type="text" id="productName" placeholder="Enter Product Name" />
+  <br />
+  <input type="number" id="price" placeholder="Enter Price" />
+  <br />
+  <button onclick="generateQR()">Generate QR</button>
+  
+
+
+  <div class="qr-wrapper" id="printArea">
+    <div id="qrcode"></div>
+  </div>
+
+  <button id="printBtn" onclick="window.print()">Print QR</button>
+
+  <script>
+    function generateQR() {
+      const id = document.getElementById("productId").value.trim();
+      const name = document.getElementById("productName").value.trim();
+      const price = document.getElementById("price").value.trim();
+
+      if (!id || !name || !price) {
+      alert("Please enter Product ID, Name, and Price.");
+        return;
+      }
+
+      const data = JSON.stringify({ id, name, price });
+
+      // Clear previous QR
+      document.getElementById("qrcode").innerHTML = "";
+
+      new QRCode(document.getElementById("qrcode"), {
+        text: data,
+        width: 200,
+        height: 200,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      // Show print button
+      setTimeout(() => {
+        document.getElementById("printBtn").style.display = "inline-block";
+      }, 300);
+    }
+  </script>
+
+</body>
+</html>
