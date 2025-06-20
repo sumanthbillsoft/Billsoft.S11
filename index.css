@@ -1,0 +1,77 @@
+/* Reset and Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+body {
+  font-family: 'Segoe UI', sans-serif;
+  color: #070101;
+  min-height: 100vh;
+  background-color: #121212;
+  background-size: cover; /* Better fill effect */
+  background-position: center center;
+  background-repeat: no-repeat;
+  height: 100vh;
+  color: #181717;
+}
+
+/* Header */
+/* CSS */
+.header {
+  background-color:transparent;
+  padding: 1rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo-img {
+  width:40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 50%;
+ 
+}
+
+.logo-text {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: white;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Main Content */
+.main-content {
+  text-align: center;
+  margin-top: 10%;
+}
+.main-content h1 {
+  font-size: 2.5rem;
+  color: #f8b712;
+  margin-bottom: 1rem;
+}
+.main-content p {
+  font-size: 1.2rem;
+  color: #eceae6;
+  margin-bottom: 2rem;
+}
+.login-link {
+  display: inline-block;
+  padding: 0.8rem 1.5rem;
+  background-color: #d4af37;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  transition: background-color 0.3s;
+}
+.login-link:hover {
+  background-color: #b8860b;
+}

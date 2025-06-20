@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Generate Product Barcode</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    h2 {
+      color: #f0c040;
+      margin-bottom: 20px;
+    }
+
+    .box {
+      background-color: #ff9800;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+      float: right;
+      margin-top: -40px;
+    }
+
+    input {
+      padding: 12px;
+      font-size: 16px;
+      margin: 10px;
+      width: 80%;
+      max-width: 300px;
+      border: none;
+      border-radius: 8px;
+      background: #1f1f1f;
+      color: white;
+    }
+
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #f0c040;
+      color: black;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #e6b800;
+    }
+
+    .barcode-wrapper {
+      display: flex;
+      justify-content: center;
+      margin: 30px auto;
+      background: #1f1f1f;
+      padding: 20px;
+      border-radius: 12px;
+      width: fit-content;
+    }
+
+    #printBtn {
+      display: none;
+      margin-top: 15px;
+      background-color: #4caf50;
+      color: white;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+
+      #printArea {
+        position: absolute;
+        top: 30px;
+        left: 0;
+        right: 0;
+        margin: auto;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <a href="dash.html" class="box">Back</a>
+
+  <h2>Generate Product Barcode</h2>
+
+ <div style="display: flex; flex-direction: column; align-items: center;">
+  <input type="text" id="productId" placeholder="Enter Product ID" />
+  <input type="text" id="productName" placeholder="Enter Product Name" />
+  <input type="number" id="price" placeholder="Enter Price" />
+</div>
+
+
+  <button onclick="generateBarcode()">Generate Barcode</button>
+
+  <div class="barcode-wrapper" id="printArea">
+    <svg id="barcode"></svg>
+  </div>
+
+  <button  id="printBtn"onclick='downloadBarcodeAsJPG("barcode")'>Print Barcode</button>
+
+  <script>
+    function generateBarcode() {
+  // ✅ Actual product data
+  const id = document.getElementById("productId").value.trim();
+  const name = document.getElementById("productName").value.trim();
+  const price = document.getElementById("price").value.trim();
+
+  if (!id || !name || !price) {
+    alert("Please enter Product ID, Name, and Price.");
+    return;
+  }
+  const barcodeValue = `${id}-${name}-${price}`;
+  const randomDisplay = Math.random().toString(36).substring(2, 10).toUpperCase();
+  // ✅ Generate barcode
+  JsBarcode("#barcode", barcodeValue, {
+    format: "CODE128",
+    lineColor: "#000000",
+    background: "#ffffff",
+    width: 2,
+    height: 100,
+    displayValue: true,
+    text: randomDisplay, // ⬅️ This overrides what's displayed under the barcode
+    fontSize: 16
+  });
+
+  // ✅ Show print button
+  document.getElementById("printBtn").style.display = "inline-block";
+}
+
+
+   function downloadBarcodeAsJPG(id = "barcode") {
+    // Select the SVG element
+    const svg = document.querySelector("#" + id);
+    if (!svg) {
+      alert("Barcode not found.");
+      return;
+    }
+
+    // Serialize SVG to PNG
+    const svgString = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+
+    canvas.width = svg.clientWidth;
+    canvas.height = svg.clientHeight;
+
+    const img = new Image();
+
+    img.onload = function(){
+      const context = canvas.getContext("2d");
+
+      // Fill canvas with white background
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      context.drawImage(img, 0, 0);
+
+      canvas.toBlob(function(blob){
+        // Create a link to download PNG as JPEG
+        const link = document.createElement("a");
+
+        link.href = URL.createObjectURL(blob);
+        link.download = "barcode.jpg";
+
+        link.click();
+
+      }, "image/jpeg");
+
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(svgString);
+  }
+
+  </script>
+
+</body>
+</html>

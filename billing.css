@@ -1,0 +1,147 @@
+/* === Global Styles === */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+   background: #1e1e1e;
+  background-size: cover;
+  color: #000;
+}
+
+/* === Top Branding === */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  color: white;
+  background: transparent;
+}
+
+.title-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.box {
+  background-color: #ff9800;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.box:hover {
+  background-color: #e68a00;
+}
+
+
+/* === Main Container === */
+#billboard {
+  margin: 60px auto;
+  padding: 30px;
+  width: 90%;
+  max-width: 600px;
+  background: #1e1e1e;
+  background-size: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+      transition: background 0.3s ease, transform 0.2s ease;
+  color: #f1c40f; /* Gold shade like in the image */
+}
+#billboard:hover {
+      background-color: #292929;
+      transform: translateY(-5px);
+    }
+/* === Headings === */
+#billboard h2,
+#billboard h3 {
+  margin-top: 0;
+  color: #f1c40f;
+}
+
+/* === Table Styling === */
+#cart {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+#cart th,
+#cart td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+  font-size: 0.95em;
+  color: #f3eeee;
+}
+
+#total {
+  margin: 15px 0;
+  font-size: 1.2em;
+  color: #f1c40f;
+  font-weight: bold;
+}
+
+/* === QR Scanner === */
+#reader {
+  width: 100%;
+  max-height: 280px;
+  margin: 15px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+/* === Buttons === */
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  font-size: 1em;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.Print-Invoice-btn {
+  background: #2196F3;
+  color: white;
+}
+
+.clear-cart-btn {
+  background: #ff9800;
+  color: white;
+}
+
+.start-scan-btn {
+  background: #27da4d;
+  color: white;
+}
+
+.stop-scan-btn {
+  background: #f44336;
+  color: white;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+/* === Responsive Design === */
+@media (max-width: 600px) {
+  #billboard {
+    padding: 20px;
+  }
+
+  #cart th, #cart td {
+    font-size: 0.85em;
+  }
+
+  button {
+    font-size: 0.95em;
+  }
+}

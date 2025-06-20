@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>POS Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .header h2 {
+      margin-bottom: 10px;
+      font-size: 28px;
+      color: #f0c040;
+    }
+
+    .header img {
+      width: 100px;
+      height: auto;
+      border-radius: 50%;
+      margin-top: 10px;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .box {
+      background: #1e1e1e;
+      padding: 25px;
+      border-radius: 15px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: #f0f0f0;
+      text-decoration: none;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    .box i {
+      font-size: 32px;
+      margin-bottom: 10px;
+      color: #f0c040;
+    }
+
+    .box:hover {
+      background-color: #292929;
+      transform: translateY(-5px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h2>Billsoft Dashboard</h2>
+    <img src="logo.png" alt="Logo">
+  </div>
+
+  <div class="dashboard">
+    <a href="billing.html" class="box">
+      <i class="fas fa-receipt"></i><br>
+      Billing
+    </a>
+    <a href="products.html" class="box">
+      <i class="fas fa-box-open"></i><br>
+      Inventory
+    </a>
+    <a href="qr.html" class="box">
+      <i class="fas fa-qrcode"></i><br>
+     Barcode
+    </a>
+    <a href="#" class="box" onclick="logout()">
+  <i class="fas fa-sign-out-alt"></i><br>
+  Logout
+</a>
+
+  </div>
+<script>
+  function logout() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("expiresAt");
+  localStorage.removeItem("role");
+  // Redirect to login, replace history so can't come back here
+  window.location.replace("index.html");
+}
+
+const token = localStorage.getItem("token");
+const expiresAt = localStorage.getItem("expiresAt");
+const now = Date.now();
+
+if (!token || (expiresAt && now > Number(expiresAt))) {
+  // If no token or expired, redirect to login immediately
+  window.location.replace("index.html");
+}
+
+// Replace current history entry to remove login page reference
+history.replaceState(null, null, location.href);
+
+// Block back navigation by pushing state again when back is attempted
+window.onpopstate = function (event) {
+  history.pushState(null, null, location.href);
+};
+
+</script>
+
+
+</body>
+</html>
