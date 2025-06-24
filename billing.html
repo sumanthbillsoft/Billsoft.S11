@@ -123,19 +123,28 @@ function startScanner() {
       ]
     },
     qrCodeMessage => {
-      if (scanned) return; 
-      scanned = true;
+  if (scanned) return;
+  scanned = true;
 
-      // ✅ Show success message for 2 seconds
-      const msg = document.getElementById("scan-message");
-      msg.style.display = "block";
-      setTimeout(() => {
-        msg.style.display = "none";
-      }, 2000);
+  // ✅ Play sound
+  document.getElementById("scanSound").play();
 
-      handleProduct(qrCodeMessage); 
-      stopScanner(); 
-    },
+  // ✅ Trigger vibration
+  if (navigator.vibrate) {
+    navigator.vibrate(200);
+  }
+
+  // ✅ Show success message
+  const msg = document.getElementById("scan-message");
+  msg.style.display = "block";
+  setTimeout(() => {
+    msg.style.display = "none";
+  }, 2000);
+
+  handleProduct(qrCodeMessage);
+  stopScanner();
+},
+
     errorMessage => {
       // You can log or ignore scan errors
       console.warn("Scan error:", errorMessage);
@@ -585,4 +594,6 @@ window.onpopstate = function () {
 
   </script>
 </body>
+<audio id="scanSound" src="https://www.soundjay.com/button/sounds/button-16.mp3" preload="auto"></audio>
+
 </html>
