@@ -62,11 +62,24 @@
     .barcode-wrapper {
       display: flex;
       justify-content: center;
+      align-items: center;
       margin: 30px auto;
       background: #1f1f1f;
       padding: 20px;
       border-radius: 12px;
       width: fit-content;
+      position: relative;
+    }
+
+    .barcode-container {
+      background-color: #ffffff;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: grab;
+    }
+
+    .barcode-container:active {
+      cursor: grabbing;
     }
 
     #printBtn {
@@ -98,28 +111,30 @@
 </head>
 <body>
 
-  <a href="dash.html" class="box">Back</a>
+<a href="dash.html" class="box">Back</a>
 
-  <h2>Generate Product Barcode</h2>
+<h2>Generate Product Barcode</h2>
 
- <div style="display: flex; flex-direction: column; align-items: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
   <input type="text" id="productId" placeholder="Enter Product ID" />
   <input type="text" id="productName" placeholder="Enter Product Name" />
   <input type="number" id="price" placeholder="Enter Price" />
 </div>
 
+<button onclick="generateBarcode()">Generate Barcode</button>
 
-  <button onclick="generateBarcode()">Generate Barcode</button>
-
-  <div class="barcode-wrapper" id="printArea">
+<div class="barcode-wrapper" id="printArea">
+  <div class="barcode-container" id="barcodeContainer" draggable="true">
     <svg id="barcode"></svg>
+    <!-- Hidden image preview for external dragging -->
+    <img id="barcodeImgPreview" style="display:none;" />
   </div>
+</div>
 
-  <button  id="printBtn"onclick='downloadBarcodeAsJPG("barcode")'>Print Barcode</button>
+<button id="printBtn" onclick='downloadBarcodeAsJPG("barcodeContainer")'>Print Barcode</button>
 
-  <script>
-    function generateBarcode() {
-  // ✅ Actual product data
+<script>
+function generateBarcode() {
   const id = document.getElementById("productId").value.trim();
   const name = document.getElementById("productName").value.trim();
   const price = document.getElementById("price").value.trim();
@@ -128,9 +143,10 @@
     alert("Please enter Product ID, Name, and Price.");
     return;
   }
+
   const barcodeValue = `${id}-${name}-${price}`;
   const randomDisplay = Math.random().toString(36).substring(2, 10).toUpperCase();
-  // ✅ Generate barcode
+
   JsBarcode("#barcode", barcodeValue, {
     format: "CODE128",
     lineColor: "#000000",
@@ -138,57 +154,92 @@
     width: 2,
     height: 100,
     displayValue: true,
-    text: randomDisplay, // ⬅️ This overrides what's displayed under the barcode
+    text: randomDisplay,
     fontSize: 16
   });
 
-  // ✅ Show print button
   document.getElementById("printBtn").style.display = "inline-block";
+
+  // Also update the hidden image preview used for drag
+  const svg = document.getElementById("barcode");
+  const svgString = new XMLSerializer().serializeToString(svg);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  const img = new Image();
+
+  img.onload = function () {
+    canvas.width = img.width;
+    canvas.height = img.height;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    const jpegData = canvas.toDataURL("image/jpeg");
+    document.getElementById("barcodeImgPreview").src = jpegData;
+  };
+
+  img.src = "data:image/svg+xml;base64," + btoa(svgString);
 }
 
+// Download barcode as JPG image
+function downloadBarcodeAsJPG(id = "barcodeContainer") {
+  const container = document.getElementById(id);
+  const svg = container.querySelector("svg");
 
-   function downloadBarcodeAsJPG(id = "barcode") {
-    // Select the SVG element
-    const svg = document.querySelector("#" + id);
-    if (!svg) {
-      alert("Barcode not found.");
-      return;
-    }
-
-    // Serialize SVG to PNG
-    const svgString = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-
-    canvas.width = svg.clientWidth;
-    canvas.height = svg.clientHeight;
-
-    const img = new Image();
-
-    img.onload = function(){
-      const context = canvas.getContext("2d");
-
-      // Fill canvas with white background
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-
-      context.drawImage(img, 0, 0);
-
-      canvas.toBlob(function(blob){
-        // Create a link to download PNG as JPEG
-        const link = document.createElement("a");
-
-        link.href = URL.createObjectURL(blob);
-        link.download = "barcode.jpg";
-
-        link.click();
-
-      }, "image/jpeg");
-
-    };
-    img.src = "data:image/svg+xml;base64," + btoa(svgString);
+  if (!svg) {
+    alert("Barcode not found.");
+    return;
   }
 
-  </script>
+  const svgString = new XMLSerializer().serializeToString(svg);
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  const img = new Image();
+
+  const rect = container.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+
+  img.onload = function () {
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(img, 0, 0);
+    canvas.toBlob(function (blob) {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "barcode.jpg";
+      link.click();
+    }, "image/jpeg");
+  };
+
+  img.src = "data:image/svg+xml;base64," + btoa(svgString);
+}
+
+// Handle drag to external apps
+document.getElementById("barcodeContainer").addEventListener("dragstart", function (e) {
+  const img = document.getElementById("barcodeImgPreview");
+
+  if (img && img.src) {
+    // Optional: show an image preview during drag
+    const dragImage = new Image();
+    dragImage.src = img.src;
+    dragImage.onload = () => {
+      e.dataTransfer.setDragImage(dragImage, dragImage.width / 2, dragImage.height / 2);
+    };
+
+    // For most apps (HTML and web): allow dropping as an image
+    e.dataTransfer.setData("text/html", `<img src="${img.src}" />`);
+    e.dataTransfer.setData("text/uri-list", img.src);
+
+    // For Word, Paint, desktop, etc. (simulate a downloadable file)
+    const fileName = "barcode.jpg";
+    e.dataTransfer.setData(
+      "DownloadURL",
+      `image/jpeg:${fileName}:${img.src}`
+    );
+  }
+});
+
+</script>
 
 </body>
 </html>
