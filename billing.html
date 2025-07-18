@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Billsoft - Venkataramana</title>
+  <link rel="stylesheet" href="billing.css"/>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+
+</head>
+<body>
+  <div class="top-bar">
+  <div class="title-section">
+    <!-- <img src="logo.png" alt="Logo" class="logo-img" /> -->
+    <div class="title-text">
+      <h2>VENKATRAMANA</h2>
+      <p>Pearls and Jewellery Since 1980</p>
+    </div>
+  </div>
+  <a href="dash.html" class="box">Back</a>
+</div>
+<div id="scan-message" style="
+  display: none;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  font-weight: bold;
+  z-index: 9999;
+">
+  Scan successfully
+</div>
+
+
+  <main class="container" id="billboard">
+    <h2>Billsoft </h2>
+    <button id="start-scan-btn" onclick="requestCameraPermission()">Start Bar Scan</button>
+    <button id="stop-scan-btn" onclick="stopScanner()" style="display:none;">Stop Bar Scan</button>
+    <div id="reader"></div>
+
+    <h3>Billing Cart</h3>
+    <table id="cart">
+      <tr><th>Product Id</th><th>Name</th><th>Price</th><th>Discount (%)</th><th>Action</th></tr>
+    </table>
+
+    <div style="margin-top: 15px; margin-bottom: 10px;">
+  <button onclick="addEditableRow()">Add Row </button>
+</div>
+
+
+
+    <h3 id="total">Total: ₹0.00</h3>
+
+    <button class="Print-Invoice-btn" onclick="printInvoice()">Print Invoice</button>
+    <button class="Print-Invoice-btn"  onclick="downloadPDF()">Download PDF</button>
+    <button class="clear-cart-btn" onclick="clearCart()">Clear Cart</button>
+  </main>
+
+  <script>
+    let cart = [];
+   let scanner;
+  let scanning = false;
+  let scanned = false;
+const token = localStorage.getItem("token");
+if (!token) {
+  window.location.replace("index.html");  // more reliable than href
+}
+
+
+    function toggleMenu() {
+      const dropdown = document.getElementById("dropdown");
+      dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+    }
+
+    function showSection(sectionId) {
+      document.querySelectorAll('.container').forEach(el => el.classList.remove('active'));
+      document.getElementById(sectionId).classList.add('active');
+      toggleMenu();
+    }
+
+    function logout() {
+  localStorage.removeItem("token");  // or sessionStorage
+  window.location.href = "index.html";
+}
+
+
+    function requestCameraPermission() {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          stream.getTracks().forEach(track => track.stop());
+          startScanner();
+        })
+        .catch(() => alert("Camera permission is required to scan QR codes."));
+    }
+
+function startScanner() {
+  if (scanning) return;
+  scanning = true;
+  scanned = false; 
+
+  document.getElementById("start-scan-btn").style.display = "none";
+  document.getElementById("stop-scan-btn").style.display = "block";
+
+  scanner = new Html5Qrcode("reader");
+  scanner.start(
+    { facingMode: "environment" },
+    {
+      fps: 10,
+      qrbox: { width: 300, height: 300 },
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.CODE_128 // ✅ Only support plain barcodes
+      ]
+    },
+    qrCodeMessage => {
+  if (scanned) return;
+  scanned = true;
+
+  // ✅ Play sound
+  document.getElementById("scanSound").play();
+
+  // ✅ Trigger vibration
+  if (navigator.vibrate) {
+    navigator.vibrate(200);
+  }
+
+  // ✅ Show success message
+  const msg = document.getElementById("scan-message");
+  msg.style.display = "block";
+  setTimeout(() => {
+    msg.style.display = "none";
+  }, 2000);
+
+  handleProduct(qrCodeMessage);
+  stopScanner();
+},
+
+    errorMessage => {
+      // You can log or ignore scan errors
+      console.warn("Scan error:", errorMessage);
+    }
+  ).catch(err => {
+    alert("Unable to start camera: " + err);
+    scanning = false;
+    document.getElementById("start-scan-btn").style.display = "block";
+    document.getElementById("stop-scan-btn").style.display = "none";
+  });
+}
+
+  function stopScanner() {
+    if (!scanner || !scanning) return;
+
+    scanner.stop().then(() => {
+      scanner.clear();
+      scanning = false;
+      document.getElementById("start-scan-btn").style.display = "block";
+      document.getElementById("stop-scan-btn").style.display = "none";
+    }).catch(err => {
+      alert("Failed to stop scanner: " + err);
+    });
+  }
+
+
+
+
+    function handleProduct(data) {
+  // Expecting format: id-name-price
+  const parts = data.split("-");
+
+  if (parts.length !== 3) {
+    alert("Invalid barcode format. Expected format: id-name-price");
+    return;
+  }
+
+  const id = parts[0] || "N/A";
+  const name = parts[1] || "Unknown";
+  const price = parseFloat(parts[2]) || 0;
+
+  cart.push({ id, name, price, discount: 0 });
+  updateCart();
+}
+
+
+
+
+
+
+   function updateCart() {
+  const cartTable = document.getElementById("cart");
+  const manualRows = document.querySelectorAll("#cart tbody tr[data-manual='true']"); // 👈 Save manual rows
+
+  cartTable.innerHTML = `
+    <tr>
+      <th>Product Id</th>
+      <th>Name</th>
+      <th>Price</th>
+      <th>Discount (%)</th>
+      <th>Action</th>
+    </tr>
+  `;
+
+  cart.forEach((item, index) => {
+    const row = cartTable.insertRow();
+    row.insertCell(0).textContent = item.id;
+    row.insertCell(1).textContent = item.name;
+    row.insertCell(2).textContent = `₹${item.price}`;
+    
+    const discountCell = row.insertCell(3);
+    const discountSelect = document.createElement("select");
+    [0, 5, 10, 15, 20, 25, 30, 35, 40].forEach(val => {
+      const option = document.createElement("option");
+      option.value = val;
+      option.text = `${val}%`;
+      if (val === item.discount) option.selected = true;
+      discountSelect.appendChild(option);
+    });
+    discountSelect.onchange = () => {
+      cart[index].discount = parseFloat(discountSelect.value);
+      updateCart();
+    };
+    discountCell.appendChild(discountSelect);
+
+    const actionCell = row.insertCell(4);
+    const removeBtn = document.createElement("button");
+    removeBtn.textContent = "Remove";
+    removeBtn.onclick = () => {
+      cart.splice(index, 1);
+      updateCart();
+    };
+    actionCell.appendChild(removeBtn);
+  });
+
+  
+  manualRows.forEach(row => {
+    document.querySelector("#cart tbody").appendChild(row);
+  });
+
+  updateTotal();
+}
+
+
+
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCart();
+    }
+
+    function clearCart() {
+  cart = [];
+
+  
+  const manualRows = document.querySelectorAll("#cart tbody tr[data-manual='true']");
+  manualRows.forEach(row => row.remove());
+
+  updateCart(); 
+}
+
+   function updateTotal() {
+  let total = 0;
+
+  // 1. Add total from scanned items (cart array)
+  cart.forEach(item => {
+    const discountedPrice = item.price * (1 - item.discount / 100);
+    total += discountedPrice;
+  });
+
+  // 2. Add total from manually entered rows
+  const manualRows = document.querySelectorAll("#cart tbody tr[data-manual='true']");
+  manualRows.forEach(row => {
+    const cells = row.querySelectorAll("td");
+   const price = parseFloat(cells[2]?.innerText) || 0;
+const discountSelect = cells[3]?.querySelector("select");
+const discount = discountSelect ? parseFloat(discountSelect.value) : 0;
+
+    const discounted = price * (1 - discount / 100);
+    total += discounted;
+  });
+
+  // 3. Display total
+  document.getElementById("total").innerText = `Total: ₹${total.toFixed(2)}`;
+}
+
+
+function addEditableRow() {
+  const table = document.querySelector("#cart tbody");
+  const row = document.createElement("tr");
+  row.setAttribute("data-manual", "true"); // ✅ Mark as manual
+
+  // Create cells
+  const idCell = document.createElement("td");
+  idCell.contentEditable = true;
+  idCell.oninput = updateTotal;
+
+  const nameCell = document.createElement("td");
+  nameCell.contentEditable = true;
+  nameCell.oninput = updateTotal;
+
+  const priceCell = document.createElement("td");
+  priceCell.contentEditable = true;
+  priceCell.oninput = updateTotal;
+
+  const discountCell = document.createElement("td");
+  const select = document.createElement("select");
+  [0, 5, 10, 15, 20, 25, 30, 35, 40].forEach(val => {
+    const option = document.createElement("option");
+    option.value = val;
+    option.text = `${val}%`;
+    select.appendChild(option);
+  });
+  select.onchange = updateTotal;
+  discountCell.appendChild(select);
+
+  const actionCell = document.createElement("td");
+  const removeBtn = document.createElement("button");
+  removeBtn.textContent = "Remove";
+  removeBtn.onclick = () => {
+    row.remove();
+    updateTotal();
+  };
+  actionCell.appendChild(removeBtn);
+
+  // Append cells to row
+  row.appendChild(idCell);
+  row.appendChild(nameCell);
+  row.appendChild(priceCell);
+  row.appendChild(discountCell);
+  row.appendChild(actionCell);
+
+  table.appendChild(row);
+  updateTotal();
+}
+
+
+
+function updateRow(cell) {
+  updateTotal(); // ✅ Correct total including scanned and manual
+}
+
+
+function removeRow(button) {
+  const row = button.closest("tr");
+  row.remove();
+  updateTotal(); // ✅ Correct total
+}
+
+
+
+
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    
+    document.getElementById("discount").addEventListener("change", updateTotal);
+  });
+    
+
+function printInvoice() {
+  const scannedEmpty = cart.length === 0;
+  const manualEmpty = document.querySelectorAll("#cart tbody tr[data-manual='true']").length === 0;
+
+  if (scannedEmpty && manualEmpty) {
+    return alert("Cart is empty!");
+  }
+
+  let total = 0;
+  let discountTotal = 0;
+  let itemsText = "";
+
+  // Header row
+  itemsText += `Name         Price  D%   Final\n`;
+  itemsText += `-----------------------------\n`;
+
+  // Scanned items
+  cart.forEach(item => {
+    const discounted = item.price * (item.discount / 100);
+    const finalPrice = item.price - discounted;
+    total += finalPrice;
+    discountTotal += discounted;
+
+    itemsText += `${item.name.substring(0, 12).padEnd(12)} ${item.price.toFixed(0).padStart(5)} ${String(item.discount).padStart(3)}% ${finalPrice.toFixed(0).padStart(6)}\n`;
+  });
+
+  // Manual items
+  const manualRows = document.querySelectorAll("#cart tbody tr[data-manual='true']");
+  manualRows.forEach(row => {
+    const cells = row.querySelectorAll("td");
+    const name = cells[1]?.innerText.trim().substring(0, 12) || "Manual";
+    const price = parseFloat(cells[2]?.innerText.replace("₹", "").trim()) || 0;
+    const discount = parseFloat(cells[3]?.querySelector("select")?.value || 0);
+    const discounted = price * (discount / 100);
+    const finalPrice = price - discounted;
+
+    total += finalPrice;
+    discountTotal += discounted;
+
+    itemsText += `${name.padEnd(12)} ${price.toFixed(0).padStart(5)} ${String(discount).padStart(3)}% ${finalPrice.toFixed(0).padStart(6)}\n`;
+  });
+
+  // Final print content
+  const htmlContent = `
+<pre style="font-size:10px; font-family:monospace; width:58mm;">
+        VENKATRAMANA
+   Pearls & Jewellery
+         Since 1980
+-----------------------------
+${itemsText}
+-----------------------------
+DISCOUNT: ₹${discountTotal.toFixed(2)}
+TOTAL:    ₹${total.toFixed(2)}
+-----------------------------
+Ramanaiah Sai Manish
+Ph: 9849284001 / 7564888899
+#32-1-41/A, KVR Swamy Rd
+Rajahmundry, AP
+</pre>
+  `;
+
+  const printWindow = window.open("", "", "width=300,height=600");
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+  setTimeout(() => printWindow.close(), 500);
+}
+
+
+
+function downloadPDF() {
+  if (cart.length === 0 && document.querySelectorAll("#cart tbody tr[data-manual='true']").length === 0) {
+    return alert("Cart is empty!");
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'pt',
+    format: [165, 600] // 58mm width
+  });
+
+  let total = 0;
+  let discountTotal = 0;
+  let y = 20; // start Y position
+
+  // Set font
+  doc.setFont("courier", "normal");
+  doc.setFontSize(8);
+
+  // Header
+  const addLine = (text, lineHeight = 12) => {
+    doc.text(text, 10, y);
+    y += lineHeight;
+  };
+  addLine("      VENKATRAMANA");
+  addLine("  Pearls & Jewellery");
+  addLine("        Since 1980");
+  addLine("--------------------------------");
+  // Table header
+  addLine("Name         Price  D%  Final");
+  addLine("--------------------------------");
+  // Scanned items
+  cart.forEach(item => {
+    const discounted = item.price * (item.discount / 100);
+    const finalPrice = item.price - discounted;
+    total += finalPrice;
+    discountTotal += discounted;
+
+    const name = item.name.substring(0, 11).padEnd(11);
+    const line = `${name} ${item.price.toFixed(0).padStart(5)} ${String(item.discount).padStart(3)}% ${finalPrice.toFixed(0).padStart(6)}`;
+    addLine(line);
+  });
+
+  // Manual items
+  const manualRows = document.querySelectorAll("#cart tbody tr[data-manual='true']");
+  manualRows.forEach(row => {
+    const cells = row.querySelectorAll("td");
+    const name = (cells[1]?.innerText.trim().substring(0, 11) || "Manual").padEnd(11);
+    const price = parseFloat(cells[2]?.innerText.replace("₹", "").trim()) || 0;
+    const discount = parseFloat(cells[3]?.querySelector("select")?.value || 0);
+    const discounted = price * (discount / 100);
+    const finalPrice = price - discounted;
+    total += finalPrice;
+    discountTotal += discounted;
+
+    const line = `${name} ${price.toFixed(0).padStart(5)} ${String(discount).padStart(3)}% ${finalPrice.toFixed(0).padStart(6)}`;
+    addLine(line);
+  });
+
+  // Totals
+  addLine("--------------------------------");
+  addLine(`DISCOUNT: Rs.${discountTotal.toFixed(2)}`);
+  addLine(`TOTAL:    Rs.${total.toFixed(2)}`);
+  addLine("--------------------------------");
+
+  // Footer
+  addLine("Sai Manish");
+  addLine("Ph: 7564888899");
+  addLine("#32-1-41/A, KVR Swamy Rd");
+  addLine("Rajahmundry, AP");
+
+  // Save PDF
+  const now = new Date();
+  const timestamp = now.toLocaleString('en-GB', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  }).replace(/[/:, ]/g, '-').replace(/--/g, '-');
+
+  doc.save(`Invoice_${timestamp}.pdf`);
+}
+
+
+
+
+
+
+    const MAX_ROWS = 30;
+      document.addEventListener("DOMContentLoaded", () => {
+    // Hide or show admin-only buttons
+    if (userRole === 'admin') {
+      document.querySelectorAll('.admin-only').forEach(el => {
+        el.style.display = 'inline-block';
+      });
+    } else {
+      document.querySelectorAll('.admin-only').forEach(el => {
+        el.style.display = 'none';
+      });
+    }
+  });
+  // Push a dummy state to history so back goes forward again
+window.history.pushState(null, null, window.location.href);
+window.onpopstate = function () {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    window.location.replace("index.html");
+  } else {
+    window.history.pushState(null, null, window.location.href);
+  }
+};
+
+  </script>
+</body>
+<audio id="scanSound" src="https://www.soundjay.com/button/sounds/button-16.mp3" preload="auto"></audio>
+
+</html>
