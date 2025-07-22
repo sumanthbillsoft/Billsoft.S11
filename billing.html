@@ -374,37 +374,44 @@ function printInvoice() {
   }
 
   let total = 0;
-  let discountTotal = 0;
+  let finalTotal = 0;
   let itemsText = "";
 
-  // Header row
-  itemsText += `Name         Price  D%   Final\n`;
-  itemsText += `-----------------------------\n`;
+  // Header row (ID column added, D% removed)
+  itemsText += `ID     Name       Price  Final\n`;
+itemsText += `-----------------------------\n`;
+
 
   // Scanned items
   cart.forEach(item => {
-    const discounted = item.price * (item.discount / 100);
-    const finalPrice = item.price - discounted;
-    total += finalPrice;
-    discountTotal += discounted;
+    const discountAmount = item.price * (item.discount / 100);
+    const finalPrice = item.price - discountAmount;
 
-    itemsText += `${item.name.substring(0, 12).padEnd(12)} ${item.price.toFixed(0).padStart(5)} ${String(item.discount).padStart(3)}% ${finalPrice.toFixed(0).padStart(6)}\n`;
+    total += item.price;
+    finalTotal += finalPrice;
+
+    const id = String(item.id || "--").padEnd(6); // or pad/truncate to whatever width fits your layout
+
+    const name = item.name.substring(0, 10).padEnd(10);
+    itemsText += `${id} ${name} ${item.price.toFixed(0).padStart(5)} ${finalPrice.toFixed(0).padStart(6)}\n`;
   });
 
   // Manual items
   const manualRows = document.querySelectorAll("#cart tbody tr[data-manual='true']");
   manualRows.forEach(row => {
     const cells = row.querySelectorAll("td");
-    const name = cells[1]?.innerText.trim().substring(0, 12) || "Manual";
+   const id = (cells[0]?.innerText.trim() || "--").padEnd(6); // for manual items
+
+    const name = (cells[1]?.innerText.trim().substring(0, 10) || "Manual").padEnd(10);
     const price = parseFloat(cells[2]?.innerText.replace("₹", "").trim()) || 0;
     const discount = parseFloat(cells[3]?.querySelector("select")?.value || 0);
-    const discounted = price * (discount / 100);
-    const finalPrice = price - discounted;
+    const discountAmount = price * (discount / 100);
+    const finalPrice = price - discountAmount;
 
-    total += finalPrice;
-    discountTotal += discounted;
+    total += price;
+    finalTotal += finalPrice;
 
-    itemsText += `${name.padEnd(12)} ${price.toFixed(0).padStart(5)} ${String(discount).padStart(3)}% ${finalPrice.toFixed(0).padStart(6)}\n`;
+    itemsText += `${id} ${name} ${price.toFixed(0).padStart(5)} ${finalPrice.toFixed(0).padStart(6)}\n`;
   });
 
   // Final print content
@@ -414,10 +421,9 @@ function printInvoice() {
    Pearls & Jewellery
          Since 1980
 -----------------------------
-${itemsText}
------------------------------
-DISCOUNT: ₹${discountTotal.toFixed(2)}
-TOTAL:    ₹${total.toFixed(2)}
+${itemsText}-----------------------------
+Total:       ₹${total.toFixed(2)}
+Final Price: ₹${finalTotal.toFixed(2)}
 -----------------------------
 Ramanaiah Sai Manish
 Ph: 9849284001 / 7564888899
@@ -449,34 +455,38 @@ function downloadPDF() {
   });
 
   let total = 0;
-  let discountTotal = 0;
+  let finalTotal = 0;
   let y = 20; // start Y position
 
   // Set font
   doc.setFont("courier", "normal");
   doc.setFontSize(8);
 
-  // Header
   const addLine = (text, lineHeight = 12) => {
     doc.text(text, 10, y);
     y += lineHeight;
   };
+
+  // Header
   addLine("      VENKATRAMANA");
   addLine("  Pearls & Jewellery");
   addLine("        Since 1980");
   addLine("--------------------------------");
-  // Table header
-  addLine("Name         Price  D%  Final");
+  // Table header (no discount column)
+  addLine("ID    Name       Price   Final");
   addLine("--------------------------------");
+
   // Scanned items
   cart.forEach(item => {
-    const discounted = item.price * (item.discount / 100);
-    const finalPrice = item.price - discounted;
-    total += finalPrice;
-    discountTotal += discounted;
+    const discountAmount = item.price * (item.discount / 100);
+    const finalPrice = item.price - discountAmount;
+    total += item.price;
+    finalTotal += finalPrice;
 
-    const name = item.name.substring(0, 11).padEnd(11);
-    const line = `${name} ${item.price.toFixed(0).padStart(5)} ${String(item.discount).padStart(3)}% ${finalPrice.toFixed(0).padStart(6)}`;
+    const id = String(item.id || "--").padEnd(6); // or pad/truncate to whatever width fits your layout
+
+    const name = item.name.substring(0, 9).padEnd(9);
+    const line = `${id} ${name} ${item.price.toFixed(0).padStart(5)} ${finalPrice.toFixed(0).padStart(6)}`;
     addLine(line);
   });
 
@@ -484,22 +494,24 @@ function downloadPDF() {
   const manualRows = document.querySelectorAll("#cart tbody tr[data-manual='true']");
   manualRows.forEach(row => {
     const cells = row.querySelectorAll("td");
-    const name = (cells[1]?.innerText.trim().substring(0, 11) || "Manual").padEnd(11);
+   const id = (cells[0]?.innerText.trim() || "--").padEnd(6); // for manual items
+
+    const name = (cells[1]?.innerText.trim().substring(0, 9) || "Manual").padEnd(9);
     const price = parseFloat(cells[2]?.innerText.replace("₹", "").trim()) || 0;
     const discount = parseFloat(cells[3]?.querySelector("select")?.value || 0);
-    const discounted = price * (discount / 100);
-    const finalPrice = price - discounted;
-    total += finalPrice;
-    discountTotal += discounted;
+    const discountAmount = price * (discount / 100);
+    const finalPrice = price - discountAmount;
+    total += price;
+    finalTotal += finalPrice;
 
-    const line = `${name} ${price.toFixed(0).padStart(5)} ${String(discount).padStart(3)}% ${finalPrice.toFixed(0).padStart(6)}`;
+    const line = `${id} ${name} ${price.toFixed(0).padStart(5)} ${finalPrice.toFixed(0).padStart(6)}`;
     addLine(line);
   });
 
   // Totals
   addLine("--------------------------------");
-  addLine(`DISCOUNT: Rs.${discountTotal.toFixed(2)}`);
-  addLine(`TOTAL:    Rs.${total.toFixed(2)}`);
+  addLine(`Total:       Rs.${total.toFixed(2)}`);
+  addLine(`Final Price: Rs.${finalTotal.toFixed(2)}`);
   addLine("--------------------------------");
 
   // Footer
